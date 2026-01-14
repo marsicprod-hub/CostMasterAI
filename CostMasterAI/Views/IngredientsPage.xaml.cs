@@ -1,6 +1,6 @@
 using CostMasterAI.ViewModels;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.Extensions.DependencyInjection; // Wajib ada
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CostMasterAI.Views
 {
@@ -11,12 +11,14 @@ namespace CostMasterAI.Views
         public IngredientsPage()
         {
             this.InitializeComponent();
-            // Ambil ViewModel dari Service
             ViewModel = App.Current.Services.GetService<IngredientsViewModel>();
             this.DataContext = ViewModel;
 
-            // Trik buat akses elemen parent di DataGrid (buat tombol delete)
-            this.Name = "ParentPage";
+            // --- JURUS ANTI-GAGAL BINDING ---
+            // Kita daftarin ViewModel sebagai "Resource" dengan nama kunci "TheViewModel"
+            // Jadi tombol di dalem tabel nanti tinggal panggil "TheViewModel" aja.
+            // Gak perlu nyari-nyari nama Page lagi.
+            this.Resources["TheViewModel"] = ViewModel;
         }
     }
 }

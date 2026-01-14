@@ -35,8 +35,11 @@
                     <DataTemplate>
                         <StackPanel Padding="8">
                             <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
-                            <TextBlock Text="{Binding CostPerUnit, Converter={StaticResource MoneyConv}}" 
-                                       Opacity="0.6" FontSize="12"/>
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="HPP:" Opacity="0.6" FontSize="12"/>
+                                <TextBlock Text="{Binding CostPerUnit, Converter={StaticResource MoneyConv}}" 
+                                           Opacity="0.6" FontSize="12"/>
+                            </StackPanel>
                         </StackPanel>
                     </DataTemplate>
                 </ListView.ItemTemplate>
@@ -61,14 +64,18 @@
                     </Grid.RowDefinitions>
 
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBlock Text="Marketing Description (AI)" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <TextBlock Text="AI Actions:" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
 
-                        <Button Content="✨ Ask Chef AI" 
+                        <Button Content="📝 Generate Deskripsi" 
                                 Command="{Binding GenerateDescriptionCommand}" 
-                                Style="{StaticResource AccentButtonStyle}"
-                                Height="32"/>
+                                Style="{StaticResource AccentButtonStyle}"/>
 
-                        <TextBlock Text="Sedang meracik kata-kata..." 
+                        <Button Content="⚡ Auto-Isi Bahan &amp; Harga" 
+                                Command="{Binding AutoGenerateIngredientsCommand}" 
+                                Style="{StaticResource AccentButtonStyle}"
+                                Background="Purple"/>
+
+                        <TextBlock Text="AI sedang bekerja..." 
                                    Visibility="{Binding IsAiLoading, Converter={StaticResource BoolVisConv}}"
                                    VerticalAlignment="Center" 
                                    FontStyle="Italic" 
@@ -79,8 +86,8 @@
                              Text="{Binding SelectedRecipe.Description, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                              AcceptsReturn="True" 
                              TextWrapping="Wrap" 
-                             Margin="0,8,0,0" 
-                             PlaceholderText="Klik tombol di atas, AI akan membuatkan deskripsi..."
+                             Margin="0,12,0,0" 
+                             PlaceholderText="Deskripsi marketing atau catatan resep akan muncul di sini..."
                              BorderThickness="0" Background="Transparent"/>
                 </Grid>
             </StackPanel>
@@ -92,9 +99,14 @@
                           DisplayMemberPath="Name"
                           Width="200"/>
 
-                <TextBox Header="Jumlah Pakai" Text="{Binding UsageQtyInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
+                <TextBox Header="Qty" Text="{Binding UsageQtyInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="80"/>
 
-                <Button Content="➕ Tambah Bahan" Command="{Binding AddItemToRecipeCommand}" VerticalAlignment="Bottom"/>
+                <ComboBox Header="Satuan" 
+                          ItemsSource="{Binding UnitOptions}" 
+                          SelectedItem="{Binding SelectedUsageUnit, Mode=TwoWay}"
+                          Width="100"/>
+
+                <Button Content="➕ Tambah" Command="{Binding AddItemToRecipeCommand}" VerticalAlignment="Bottom"/>
             </StackPanel>
 
             <ListView Grid.Row="2" ItemsSource="{Binding SelectedRecipe.Items}">
@@ -107,8 +119,8 @@
                             <ColumnDefinition Width="50"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="Bahan" FontWeight="Bold" Grid.Column="0"/>
-                        <TextBlock Text="Qty" FontWeight="Bold" Grid.Column="1"/>
-                        <TextBlock Text="Subtotal" FontWeight="Bold" Grid.Column="2"/>
+                        <TextBlock Text="Qty Pakai" FontWeight="Bold" Grid.Column="1"/>
+                        <TextBlock Text="Subtotal (HPP)" FontWeight="Bold" Grid.Column="2"/>
                         <TextBlock Text="" Grid.Column="3"/>
                     </Grid>
                 </ListView.Header>
@@ -126,7 +138,7 @@
 
                             <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding UsageQty}"/>
-                                <TextBlock Text="{Binding Ingredient.Unit}" Margin="4,0,0,0" Opacity="0.6"/>
+                                <TextBlock Text="{Binding UsageUnit}" Margin="4,0,0,0" Opacity="0.6"/>
                             </StackPanel>
 
                             <TextBlock Text="{Binding CalculatedCost, Converter={StaticResource MoneyConv}}" 

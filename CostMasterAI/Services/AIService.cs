@@ -11,10 +11,8 @@ namespace CostMasterAI.Services
     {
         private readonly HttpClient _httpClient;
 
-        // API Key Google Gemini lo
+        // GANTI API KEY LO DISINI
         private const string ApiKey = "AIzaSyC-moDDIsYHjDx5jFLoNbJALhl-LmBCvsc";
-
-        // Base Endpoint Gemini
         private const string BaseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
         public AIService()
@@ -22,61 +20,84 @@ namespace CostMasterAI.Services
             _httpClient = new HttpClient();
         }
 
+        // --- FITUR LAMA (Marketing) ---
         public async Task<string> GenerateMarketingCopyAsync(string recipeName, string ingredients)
         {
-            // --- MODE DEMO (Jaga-jaga kalau key kosong) ---
-            if (string.IsNullOrEmpty(ApiKey))
-            {
-                await Task.Delay(2000);
-                return $"[AI DEMO]: Wuih! {recipeName} ini rasanya pecah banget! Dibuat dari {ingredients} pilihan terbaik. Order sekarang bro!";
-            }
+            var prompt = $"Buatkan deskripsi makanan yang menggugah selera untuk menu '{recipeName}'. Bahannya: {ingredients}. Gaya bahasa: Gaul, santai, tapi menjual (copywriting). Maksimal 50 kata.";
+            return await SendPromptAsync(prompt);
+        }
 
-            // --- MODE GEMINI REAL ---
+        // --- FITUR BARU (Recipe Generator - JSON) ---
+        public async Task<string> GenerateRecipeDataAsync(string recipeName)
+        {
+            // Prompt Canggih: Minta output JSON murni
+            var prompt = $@"
+                Bertindaklah sebagai Chef dan Konsultan Bisnis Kuliner.
+                Saya ingin membuat menu: '{recipeName}'.
+                
+                Tugasmu:
+                1. Tentukan bahan-bahan bakunya.
+                2. Tentukan estimasi jumlah pemakaian untuk 1 porsi.
+                3. Tentukan estimasi HARGA PASARAN (IDR) bahan tersebut per kemasan umum.
+                
+                OUTPUT WAJIB FORMAT JSON (Tanpa markdown, tanpa teks lain, langsung kurung siku array):
+                [
+                    {{
+                        ""ingredient_name"": ""Nama Bahan (Contoh: Tepung Terigu)"",
+                        ""usage_qty"": 100,
+                        ""usage_unit"": ""Gram"",
+                        ""estimated_price_per_package"": 15000,
+                        ""package_qty"": 1000,
+                        ""package_unit"": ""Gram""
+                    }}
+                ]
+                
+                Pastikan unit pemakaian dan unit beli (package) kompatibel atau masuk akal.
+            ";
+
+            return await SendPromptAsync(prompt);
+        }
+
+        // --- HELPER KIRIM REQUEST ---
+        private async Task<string> SendPromptAsync(string prompt)
+        {
+            if (string.IsNullOrEmpty(ApiKey)) return "API Key Missing";
+
             try
             {
-                var prompt = $"Buatkan deskripsi makanan yang menggugah selera untuk menu '{recipeName}'. Bahannya: {ingredients}. Gaya bahasa: Gaul, santai, tapi menjual (copywriting). Maksimal 50 kata.";
-
-                // 1. Struktur Request KHUSUS GEMINI (Beda sama OpenAI)
                 var requestBody = new
                 {
                     contents = new[]
                     {
-                        new
-                        {
-                            parts = new[]
-                            {
-                                new { text = prompt }
-                            }
-                        }
+                        new { parts = new[] { new { text = prompt } } }
                     }
                 };
 
                 var json = JsonSerializer.Serialize(requestBody);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                // 2. URL Request (API Key ditaruh di Query Param kalau Gemini)
                 var requestUrl = $"{BaseUrl}?key={ApiKey}";
 
-                // 3. Tembak API
                 var response = await _httpClient.PostAsync(requestUrl, content);
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
                 {
                     var node = JsonNode.Parse(responseString);
+                    var result = node?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
 
-                    // 4. Cara Baca Response GEMINI
-                    // Path: candidates[0] -> content -> parts[0] -> text
-                    var resultText = node?["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]?.ToString();
-
-                    return resultText ?? "AI Bingung (Output Kosong).";
+                    // Bersihin Markdown Code Block kalau si AI bandel ngasih ```json
+                    if (result != null)
+                    {
+                        result = result.Replace("```json", "").Replace("```", "").Trim();
+                    }
+                    return result ?? "";
                 }
 
-                return $"Error Gemini: {response.StatusCode} - {responseString}";
+                return "";
             }
-            catch (Exception ex)
+            catch
             {
-                return $"Gagal connect ke AI: {ex.Message}";
+                return "";
             }
         }
     }

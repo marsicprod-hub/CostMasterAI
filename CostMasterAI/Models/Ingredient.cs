@@ -3,33 +3,44 @@ using System.ComponentModel.DataAnnotations;
 
 namespace CostMasterAI.Models
 {
-    // Ini cetakan untuk satu bahan baku
     public class Ingredient
     {
-        // Key: ID unik buat tiap bahan (auto-generate sama database)
         [Key]
         public int Id { get; set; }
 
-        // Nama bahan, misal: "Tepung Terigu Segitiga"
         [Required]
         public string Name { get; set; } = string.Empty;
 
-        // Harga beli per kemasan, misal: 12000
+        // Harga Beli (Kotor)
         public decimal PricePerPackage { get; set; }
 
-        // Jumlah isi per kemasan, misal: 1000 (untuk 1kg)
+        // Berat Beli (Kotor)
         public double QuantityPerPackage { get; set; }
 
-        // Satuan, misal: "Gram", "ML", "Pcs"
         public string Unit { get; set; } = "Gram";
 
-        // Fitur AI nanti: Kategori otomatis (misal: "Dairy", "Spice")
         public string Category { get; set; } = "General";
 
-        // Helper buat hitung harga per satuan terkecil (Price / Quantity)
-        // Ini properti pintar, gak disimpen di DB, tapi dihitung on-the-fly
-        public decimal PricePerUnit => QuantityPerPackage > 0
-            ? PricePerPackage / (decimal)QuantityPerPackage
-            : 0;
+        // --- TAMBAHAN BARU ---
+        // Yield Percent: Berapa % bagian yang bisa dipake?
+        // Default 100% (misal Susu, Gula). Kalau Kentang/Udang mungkin 80% atau 60%.
+        public double YieldPercent { get; set; } = 100;
+
+        // --- LOGIKA BARU ---
+        // Harga Asli per Unit Bersih (Ini yang dipake hitung HPP!)
+        // Rumus: Harga Beli / (Berat Beli x Yield%)
+        public decimal RealCostPerUnit
+        {
+            get
+            {
+                if (QuantityPerPackage <= 0 || YieldPercent <= 0) return 0;
+
+                // Hitung berat bersih yang didapat dari 1 kemasan
+                var usableQty = (decimal)QuantityPerPackage * ((decimal)YieldPercent / 100m);
+
+                // Harga dibagi berat bersih
+                return PricePerPackage / usableQty;
+            }
+        }
     }
 }
